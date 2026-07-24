@@ -1,0 +1,130 @@
+name: Check GitHub Test.iflw (start event + Groovy script)
+
+on:
+  push:
+    paths:
+      - "src/main/resources/scenarioflows/integrationflow/GitHub Test.iflw"
+
+jobs:
+  check-github-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install unzip and xmlstarlet
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unzip xmlstarlet
+
+      - name: Detect GitHub Test.iflw type and prepare files
+        id: prepare
+        run: |
+          set -e
+
+          BASE_PATH="src/main/resources/scenarioflows/integrationflow"
+          FILE_PATH_IFLW="${BASE_PATH}/GitHub Test.iflw"
+          WORK_DIR="build/GitHub_Test"
+          mkdir -p "$WORK_DIR"
+
+          if [ ! -f "$FILE_PATH_IFLW" ]; then
+            echo "File not found: $FILE_PATH_IFLW"
+            exit 1
+          fi
+
+          echo "Found: $FILE_PATH_IFLW"
+          FILE_INFO=$(file "$FILE_PATH_IFLW" || true)
+          echo "file info: $FILE_INFO"
+
+          # Check if .iflw is a ZIP archive
+          if echo "$FILE_INFO" | grep -qi "zip archive"; then
+            echo "GitHub Test.iflw appears to be a ZIP archive. Unzipping..."
+            unzip "$FILE_PATH_IFLW" -d "$WORK_DIR"
+
+            echo "Contents of unzipped GitHub Test.iflw:"
+            find "$WORK_DIR" -maxdepth 4 -type f
+
+            BPMN_FILE=$(find "$WORK_DIR" -name "*.bpmn" | head -n 1)
+            if [ -z "$BPMN_FILE" ]; then
+              echo "No BPMN file (*.bpmn) found inside GitHub Test.iflw."
+              exit 1
+            fi
+            echo "bpmn_file=$BPMN_FILE" >> $GITHUB_OUTPUT
+
+            # Groovy scripts inside the unzipped artifact
+            GROOVY_ROOT="$WORK_DIR"
+            echo "groovy_root=$GROOVY_ROOT" >> $GITHUB_OUTPUT
+
+          else
+            echo "GitHub Test.iflw is not detected as ZIP. Treating as BPMN/XML."
+            # Copy as BPMN so xmlstarlet can parse it
+            cp "$FILE_PATH_IFLW" "$WORK_DIR/GitHub_Test.bpmn"
+            BPMN_FILE="$WORK_DIR/GitHub_Test.bpmn"
+            echo "bpmn_file=$BPMN_FILE" >> $GITHUB_OUTPUT
+
+            # Groovy scripts might be elsewhere in the project; search repo root
+            GROOVY_ROOT="."
+            echo "groovy_root=$GROOVY_ROOT" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check start event has incoming flow
+        run: |
+          set -e
+          BPMN_FILE="${{ steps.prepare.outputs.bpmn_file }}"
+
+          echo "Using BPMN file: $BPMN_FILE"
+
+          # BPMN 2.0 namespace (adjust if your BPMN uses another URI)
+          NS_BPMN="http://www.omg.org/spec/BPMN/20100524/MODEL"
+
+          # 1) Get startEvent IDs
+          START_EVENT_IDS=$(xmlstarlet sel -N bpmn="$NS_BPMN" \
+            -t -m "//bpmn:startEvent" -v "@id" -n "$BPMN_FILE")
+
+          if [ -z "$START_EVENT_IDS" ]; then
+            echo "No <bpmn:startEvent> found in BPMN."
+            exit 1
+          fi
+
+          echo "Found startEvent IDs:"
+          echo "$START_EVENT_IDS"
+
+          # 2) Check for <bpmn:incoming> under each startEvent
+          HAS_INCOMING=false
+
+          while IFS= read -r SE_ID; do
+            INCOMING=$(xmlstarlet sel -N bpmn="$NS_BPMN" \
+              -t -m "//bpmn:startEvent[@id='$SE_ID']/bpmn:incoming" -v . -n "$BPMN_FILE")
+
+            if [ -n "$INCOMING" ]; then
+              echo "StartEvent $SE_ID has incoming flow(s):"
+              echo "$INCOMING"
+              HAS_INCOMING=true
+            fi
+          done <<< "$START_EVENT_IDS"
+
+          if [ "$HAS_INCOMING" != "true" ]; then
+            echo "No startEvent with an incoming flow found. Failing check."
+            exit 1
+          fi
+
+          echo "Start event + incoming flow check passed."
+
+      - name: Check Groovy script exists
+        run: |
+          set -e
+          GROOVY_ROOT="${{ steps.prepare.outputs.groovy_root }}"
+
+          echo "Searching for Groovy scripts under: $GROOVY_ROOT"
+
+          GROOVY_FILES=$(find "$GROOVY_ROOT" -iname "*.groovy" || true)
+
+          if [ -z "$GROOVY_FILES" ]; then
+            echo "No Groovy script (.groovy) found related to GitHub Test.iflw."
+            exit 1
+          fi
+
+          echo "Found Groovy script(s):"
+          echo "$GROOVY_FILES"
+          echo "Groovy script check passed."
