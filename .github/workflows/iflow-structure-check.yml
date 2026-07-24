@@ -3,7 +3,7 @@ name: Check GitHub Test.iflw (start event + Groovy script)
 on:
   push:
     paths:
-      - "src/main/resources/scenarioflows/integrationflow/GitHub Test.iflw"
+      - "GitHub_Test/src/main/resources/scenarioflows/integrationflow/GitHub Test.iflw"
 
 jobs:
   check-github-test:
@@ -23,7 +23,7 @@ jobs:
         run: |
           set -e
 
-          BASE_PATH="src/main/resources/scenarioflows/integrationflow"
+          BASE_PATH="GitHub_Test/src/main/resources/scenarioflows/integrationflow"
           FILE_PATH_IFLW="${BASE_PATH}/GitHub Test.iflw"
           WORK_DIR="build/GitHub_Test"
           mkdir -p "$WORK_DIR"
