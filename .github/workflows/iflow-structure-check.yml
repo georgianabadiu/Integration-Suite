@@ -18,6 +18,9 @@ jobs:
           set -e
           FILE_PATH_IFLW="GitHub_Test/src/main/resources/scenarioflows/integrationflow/GitHub Test.iflw"
 
+          echo "Checking for IFLW file at: $FILE_PATH_IFLW"
+          ls -R GitHub_Test || true
+
           if [ ! -f "$FILE_PATH_IFLW" ]; then
             echo "File not found: $FILE_PATH_IFLW"
             exit 1
@@ -31,14 +34,21 @@ jobs:
 
           GROOVY_ROOT="GitHub_Test/src/main/resources/script"
 
-          echo "Searching for Groovy scripts under: $GROOVY_ROOT"
+          echo "Checking Groovy root directory: $GROOVY_ROOT"
+          ls -R GitHub_Test/src/main || true
 
           if [ ! -d "$GROOVY_ROOT" ]; then
             echo "Groovy script directory not found: $GROOVY_ROOT"
             exit 1
           fi
 
-          GROOVY_FILES=$(find "$GROOVY_ROOT" -iname "*.groovy" || true)
+          echo "Searching for Groovy scripts under: $GROOVY_ROOT"
+
+          # IMPORTANT: no "|| true" here – we want failure if find fails or returns nothing
+          GROOVY_FILES=$(find "$GROOVY_ROOT" -iname "*.groovy")
+
+          echo "find output:"
+          echo "$GROOVY_FILES"
 
           if [ -z "$GROOVY_FILES" ]; then
             echo "No Groovy script (.groovy) found in $GROOVY_ROOT."
