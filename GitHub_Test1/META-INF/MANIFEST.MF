@@ -1,6 +1,6 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: GitHub Test
+Bundle-Name: GitHub Testabc
 Bundle-SymbolicName: GitHub_Test1; singleton:=true
 Bundle-Version: 1.0.0
 SAP-BundleType: IntegrationFlow
