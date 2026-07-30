@@ -1,4 +1,4 @@
-name: Check GitHub Test.iflw (Groovy script only)
+name: Check GitHub Test.iflw 
 
 on:
   push:
