@@ -23,11 +23,14 @@ def Message processData(Message message) {
     def properties = message.getProperties();
     value = properties.get("oldProperty");
     message.setProperty("oldProperty", value + " modified");
+    message.setProperty("newProperty", "newProperty"); */
     message.setProperty("newProperty", "newProperty");
     */
 
+    // Set dummy properties for name and email
     // Set dummy properties for name, email, and phone
     message.setProperty("name", "Dummy Name");
+    message.setProperty("email", "dummy.email@example.com"); */
     message.setProperty("email", "dummy.email@example.com");
     message.setProperty("phone", "000-000-0000");
 
