@@ -30,4 +30,6 @@ Import-Package: com.sap.esb.application.services.cxf.interceptor,com.sap
  che.camel.processor.idempotent.jdbc,org.osgi.service.blueprint
 Origin-Bundle-Name: GitHub Test
 Origin-Bundle-SymbolicName: GitHub_Test
+Require-Capability: scriptcollection.TEST_SC;resolution:=optional;bundle
+ Type:String="ScriptCollection";source:String="reference"
 
